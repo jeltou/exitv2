@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exit V2</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#111827ee; /* gray-900 */
+      --text:#e5e7eb; /* gray-200 */
+      --muted:#9ca3af; /* gray-400 */
+      --accent:#f472b6; /* pink-400 */
+      --accent-2:#38bdf8; /* sky-400 */
+      --ok:#34d399; /* emerald-400 */
+      --warn:#f59e0b; /* amber-500 */
+      --err:#f87171; /* red-400 */
+      --card:#111827; /* gray-900 */
+      --border: #1f2937; /* gray-800 */
+    }
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% -20%, #1e293b, transparent),
+                  radial-gradient(1200px 800px at 120% 20%, #0e7490, transparent),
+                  var(--bg);
+      color:var(--text);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .wrap{ width: min(900px, 92vw); margin: 4vmin auto; }
+    .glass{ backdrop-filter: blur(8px); background: linear-gradient(180deg, rgba(17,24,39,.85), rgba(17,24,39,.75)); border:1px solid var(--border); border-radius:24px; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow:hidden; }
+    header{ padding:28px 28px 16px; border-bottom:1px solid var(--border); }
+    h1{ margin:0; font-size: clamp(26px, 3vw, 34px); letter-spacing:.2px; }
+    .sub{ color:var(--muted); margin-top:6px; font-size:14px }
+
+    .controls{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding: 18px 28px; border-bottom:1px solid var(--border); }
+    .controls label{ font-size:14px; color:var(--muted) }
+    .switch{ display:inline-flex; align-items:center; gap:8px; background:#0b1220; border:1px solid var(--border); padding:10px 12px; border-radius:14px }
+    input[type="number"], input[type="text"]{ background:#0b1220; border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:12px; outline:none; font-size:15px }
+    input[type="number"]{ width:88px }
+    button{ background:linear-gradient(180deg, #0ea5e9, #0284c7); border:none; color:white; padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; box-shadow: 0 6px 16px rgba(2,132,199,.35); }
+    button.secondary{ background: #0b1220; border:1px solid var(--border); color:var(--text); box-shadow:none }
+    button.ghost{ background:transparent; color:var(--muted); border:1px dashed var(--border) }
+
+    .grid{ display:grid; grid-template-columns: 1fr; gap:16px; padding: 22px; }
+    @media(min-width: 760px){ .grid{ grid-template-columns: repeat(2, 1fr); } }
+
+    .card{ background:linear-gradient(180deg, rgba(2,6,23,.7), rgba(2,6,23,.55)); border:1px solid var(--border); border-radius:20px; padding:18px; position:relative; min-height:180px; display:flex; flex-direction:column; gap:12px }
+    .card.locked{ opacity:.65; }
+    .badge{ position:absolute; right:14px; top:12px; font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
+    .badge.ok{ color:#10b981; border-color:#064e3b; background:#052e2a }
+    .badge.lock{ color:#fbbf24; border-color:#78350f; background:#1f1305 }
+    .badge.next{ color:#60a5fa; border-color:#1e40af; background:#0b1433 }
+
+    .riddle-title{ font-weight:700; font-size:16px; letter-spacing:.3px }
+    .riddle{ color: #e7eaf1; line-height:1.5; font-size:15px }
+
+    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+    .msg{ font-size:13px; color:var(--muted) }
+    .msg.err{ color: var(--err) }
+    .msg.ok{ color: var(--ok) }
+
+    .footer{ padding: 14px 22px 24px; border-top:1px solid var(--border); color:var(--muted); font-size:13px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px }
+
+    .final{ padding: 24px 28px 34px; text-align:center }
+    .final .line{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: clamp(18px, 2.6vw, 22px); color:#cbd5e1 }
+    .final .big{ margin-top:10px; font-size: clamp(22px, 4.6vw, 42px); font-weight: 800; letter-spacing:.5px; background: linear-gradient(90deg, #f472b6, #38bdf8, #a78bfa); -webkit-background-clip:text; background-clip:text; color:transparent }
+
+    .type{ display:inline-block; border-right:2px solid #fff4; white-space:nowrap; overflow:hidden; animation: typing 3s steps(40), blink 1s step-end infinite; }
+    @keyframes typing{ from{ width:0 } to { width:100% } }
+    @keyframes blink{ 50%{ border-color: transparent } }
+
+    .hidden{ display:none }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="glass">
+      <header>
+        <h1>Exit V2</h1>
+        <div class="sub">Sechs Text-Rätsel · Ein Wort pro Rätsel · Am Ende die Wahrheit.</div>
+      </header>
+
+      <div class="controls" id="controls">
+        <div class="switch">
+          <label><input type="checkbox" id="timedToggle"> Zeitmodus</label>
+        </div>
+        <label>Intervall (Minuten): <input type="number" id="interval" min="1" max="240" value="45"></label>
+        <button id="startBtn">Start</button>
+        <button class="secondary" id="resetBtn">Zurücksetzen</button>
+        <span class="msg">Tipp: Mit <b>Zeitmodus</b> schalten sich Rätsel automatisch im Intervall frei. Ohne: manuell, nach Reihenfolge.</span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <div class="final hidden" id="final">
+        <div class="line">Gefundene Worte:</div>
+        <div class="line" id="foundLine">—</div>
+        <div class="big" id="finalText"></div>
+        <div style="margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
+          <button id="copyBtn" class="secondary">Text kopieren</button>
+          <button id="restartBtn" class="ghost">Neu beginnen</button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span id="progressInfo">Fortschritt: 0/5</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Konfiguration ---
+    const RIDDLES = [
+      {
+        key: 'ich',
+        title: 'Rätsel #1 – Der Anfang von allem',
+        text: 'Ich bin das Wort, mit dem Geschichten beginnen. Ohne mich gäbe es kein Wir, und doch bin ich nur drei Buchstaben lang. Wer bin ich?',
+        answers: ['ich']
+      },
+      {
+        key: 'liebe',
+        title: 'Rätsel #2 – Die Kraft ohne Logik',
+        text: 'Ich bin unsichtbar, doch ich bewege alles. Ich brauche kein Warum, kein Wie. Manchmal breche ich Herzen, manchmal heile ich sie. Wer bin ich?',
+        answers: ['liebe']
+      },
+      {
+        key: 'dich',
+        title: 'Rätsel #3 – Das Ziel aller Zeilen',
+        text: 'In jedem Gedicht bin ich das Ende. In jedem Blick bin ich das Zentrum. Ich bin der Grund, warum dieses Spiel begonnen hat. Wer bin ich?',
+        answers: ['dich']
+      },
+      {
+        key: 'ueber',
+        title: 'Rätsel #4 – Der Übergang',
+        text: 'Ich bin kein Ort, aber ich trenne Orte. Ich bin kein Himmel, aber ich führe dorthin. Ich stehe über vielem, und doch bin ich nur fünf Buchstaben lang. Wer bin ich?',
+        answers: ['über','ueber','uber']
+      },
+      {
+        key: 'alles',
+        title: 'Rätsel #5 – Das Ganze',
+        text: 'Ich bin das Maximum. Nichts ist mehr als ich. Und doch kann ich leicht gesagt, aber schwer gegeben werden. Wer bin ich?',
+        answers: ['alles']
+      }
+    ];
+
+    const FINAL_SENTENCE = 'Ich liebe dich über alles.';
+
+    const $ = sel => document.querySelector(sel);
+    const grid = $('#grid');
+    const progressInfo = $('#progressInfo');
+
+    const state = {
+      started: false,
+      timed: false,
+      intervalMin: 45,
+      startAt: null,
+      solved: {},
+      unlocked: {0:true},
+    };
+
+    // Load from localStorage
+    const saved = JSON.parse(localStorage.getItem('love-riddle-v1')||'null');
+    if(saved){ Object.assign(state, saved); }
+
+    const save = () => localStorage.setItem('love-riddle-v1', JSON.stringify(state));
+
+    // Helpers
+    const normalize = (s) => (s||'').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'');
+
+    const isUnlocked = (idx) => {
+      if(!state.started) return false;
+      if(idx===0) return true;
+      // must be sequential
+      for(let i=0;i<idx;i++){ if(!state.solved[RIDDLES[i].key]) return false; }
+      if(!state.timed) return true;
+      const base = state.startAt ? new Date(state.startAt).getTime() : Date.now();
+      const unlockAt = base + (idx * state.intervalMin * 60 * 1000);
+      return Date.now() >= unlockAt;
+    };
+
+    const formatUnlock = (idx) => {
+      if(!state.timed) return '';
+      const base = state.startAt ? new Date(state.startAt).getTime() : Date.now();
+      const t = new Date(base + (idx * state.intervalMin * 60 * 1000));
+      return t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    };
+
+    function render(){
+      // Controls reflect state
+      $('#timedToggle').checked = !!state.timed;
+      $('#interval').value = state.intervalMin;
+
+      grid.innerHTML = '';
+      let solvedCount = 0;
+
+      RIDDLES.forEach((r, idx)=>{
+        const solved = !!state.solved[r.key];
+        if(solved) solvedCount++;
+        const unlocked = isUnlocked(idx);
+
+        const card = document.createElement('div');
+        card.className = 'card' + (unlocked?'' : ' locked');
+
+        const badge = document.createElement('div');
+        badge.className = 'badge ' + (solved? 'ok' : (unlocked? 'next' : 'lock'));
+        badge.textContent = solved? 'Gelöst' : (unlocked? 'Bereit' : (state.timed? ('Frei um ' + formatUnlock(idx)) : 'Gesperrt'));
+        card.appendChild(badge);
+
+        const title = document.createElement('div');
+        title.className = 'riddle-title';
+        title.textContent = r.title;
+        card.appendChild(title);
+
+        const text = document.createElement('div');
+        text.className = 'riddle';
+        text.textContent = r.text;
+        card.appendChild(text);
+
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Antwort eingeben…';
+        input.disabled = !unlocked || solved;
+        input.value = solved? r.answers[0] : '';
+        row.appendChild(input);
+
+        const btn = document.createElement('button');
+        btn.textContent = solved? '✔️' : 'Prüfen';
+        btn.disabled = !unlocked || solved;
+        row.appendChild(btn);
+
+        const hint = document.createElement('button');
+        hint.textContent = 'Hinweis';
+        hint.className = 'secondary';
+        hint.disabled = !unlocked || solved;
+        row.appendChild(hint);
+
+        const msg = document.createElement('div');
+        msg.className = 'msg';
+        row.appendChild(msg);
+
+        card.appendChild(row);
+        grid.appendChild(card);
+
+        // Handlers
+        const check = () => {
+          const val = normalize(input.value);
+          const ok = r.answers.map(normalize).includes(val);
+          if(ok){
+            state.solved[r.key] = true;
+            save();
+            msg.textContent = 'Richtig!';
+            msg.className = 'msg ok';
+            btn.textContent = '✔️';
+            btn.disabled = true; input.disabled = true; hint.disabled = true;
+            renderMaybeFinish();
+          }else{
+            msg.textContent = 'Nicht ganz. Versuch eine einfachere Schreibweise.';
+            msg.className = 'msg err';
+          }
+        };
+        btn.addEventListener('click', check);
+        input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+
+        hint.addEventListener('click', ()=>{
+          const clues = {
+            ich: 'Drei Buchstaben. Beginnt jede Geschichte, beginnt auch dieses Geständnis.',
+            liebe: 'Unsichtbar, aber spürbar. Stärker als Logik.',
+            dich: 'Ziel aller Zeilen, Mittelpunkt eines Blicks.',
+            ueber: 'Mit Punkten oder ohne, doch immer höher als…',
+            alles: 'Mehr gibt es nicht.'
+          };
+          msg.textContent = clues[r.key] || 'Kein Hinweis verfügbar.';
+          msg.className = 'msg';
+        });
+      });
+
+      progressInfo.textContent = `Fortschritt: ${solvedCount}/${RIDDLES.length}`;
+
+      // Toggle final block
+      const allSolved = solvedCount === RIDDLES.length;
+      $('#final').classList.toggle('hidden', !allSolved);
+      if(allSolved){
+        const words = ['Ich','Liebe','Dich','Über','Alles'];
+        $('#foundLine').textContent = words.join(' · ');
+        typeFinal(FINAL_SENTENCE);
+      }
+    }
+
+    function renderMaybeFinish(){
+      // Re-render to unlock next card instantly (even im Zeitmodus, wir prüfen Zeit erneut)
+      render();
+    }
+
+    function typeFinal(text){
+      const el = $('#finalText');
+      el.innerHTML = '';
+      const span = document.createElement('span');
+      span.className = 'type';
+      el.appendChild(span);
+      let i=0;
+      const tick = () => {
+        span.textContent = text.slice(0,i++);
+        if(i<=text.length) requestAnimationFrame(tick);
+        else span.classList.remove('type');
+      };
+      tick();
+    }
+
+    // Controls
+    $('#startBtn').addEventListener('click', ()=>{
+      state.started = true;
+      state.timed = $('#timedToggle').checked;
+      state.intervalMin = Math.max(1, parseInt($('#interval').value||'45',10));
+      state.startAt = new Date().toISOString();
+      state.solved = state.solved || {};
+      save();
+      render();
+    });
+
+    $('#resetBtn').addEventListener('click', ()=>{
+      if(confirm('Wirklich alles zurücksetzen?')){
+        localStorage.removeItem('love-riddle-v1');
+        Object.assign(state, { started:false, timed:false, intervalMin:45, startAt:null, solved:{}, unlocked:{0:true} });
+        render();
+      }
+    });
+
+    $('#copyBtn')?.addEventListener('click', async ()=>{
+      const text = FINAL_SENTENCE + '\n— Dein geheimes Rätsel';
+      try{ await navigator.clipboard.writeText(text); alert('Kopiert!'); }catch(e){ alert('Konnte nicht kopieren.'); }
+    });
+
+    $('#restartBtn')?.addEventListener('click', ()=>{
+      document.getElementById('resetBtn').click();
+    });
+
+    // Timed unlock ticker
+    setInterval(()=>{ if(state.started && state.timed) render(); }, 15*1000);
+
+    // Initial UI state
+    // Reflect controls from saved state
+    $('#timedToggle').checked = !!state.timed;
+    $('#interval').value = state.intervalMin;
+
+    // If started previously, render cards; else show empty grid text
+    if(state.started){ render(); }
+    else{
+      grid.innerHTML = `<div class="card" style="grid-column:1/-1; align-items:center; text-align:center;">
+        <div class="riddle-title">Bereit?</div>
+        <div class="riddle">Drücke <b>Start</b>, um die Mission zu beginnen. Du kannst entscheiden, ob die Rätsel automatisch im Intervall freigeschaltet werden (Zeitmodus) oder ob du sie nacheinander manuell löst.</div>
+      </div>`;
+    }
+  </script>
+</body>
+</html>
+
