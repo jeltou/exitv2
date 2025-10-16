@@ -18,7 +18,7 @@
       --card:#111827; /* gray-900 */
       --border: #1f2937; /* gray-800 */
     }
-    html,body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";\n      background: radial-gradient(1200px 600px at 20% -20%, #1e293b, transparent),\n                  radial-gradient(1200px 800px at 120% 20%, #0e7490, transparent),\n                  var(--bg);\n      color:var(--text);\n      min-height:100%;\n    }
+    html,body{height:100%}
     body{
       margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background: radial-gradient(1200px 600px at 20% -20%, #1e293b, transparent),
@@ -27,9 +27,9 @@
       color:var(--text);
       display:flex; align-items:center; justify-content:center;
     }
-    .wrap{ width: min(900px, 92vw); margin: 0 auto; padding: 12px 0 28px; }
+    .wrap{ width: min(900px, 92vw); margin: 4vmin auto; }
     .glass{ backdrop-filter: blur(8px); background: linear-gradient(180deg, rgba(17,24,39,.85), rgba(17,24,39,.75)); border:1px solid var(--border); border-radius:24px; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow:hidden; }
-    header{ padding:28px 28px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; backdrop-filter: blur(10px); background: linear-gradient(180deg, rgba(17,24,39,.92), rgba(17,24,39,.78)); }
+    header{ padding:28px 28px 16px; border-bottom:1px solid var(--border); }
     h1{ margin:0; font-size: clamp(26px, 3vw, 34px); letter-spacing:.2px; }
     .sub{ color:var(--muted); margin-top:6px; font-size:14px }
 
@@ -71,16 +71,13 @@
     @keyframes blink{ 50%{ border-color: transparent } }
 
     .hidden{ display:none }
-    /* Mobile/Scroll Fixes */
-    .card{ scroll-margin-top: 120px }
-    @media(max-width:640px){ .card{ scroll-margin-top: 96px } }
-    /* Mobile layout: voll scrollfähig, kein Flex-Centering */    @media(max-width: 640px){\n      .wrap{ width:100vw; padding: 8px 0 24px; }\n      .glass{ border-radius:0; }\n      header{ padding:16px 14px 10px; }\n      .controls{ padding:10px 14px; gap:8px }\n      .grid{ padding:10px }\n      .card{ min-height:auto; scroll-margin-top:96px }\n    }\n  </style>
+  </style>
 </head>
 <body>
   <div class="wrap">
     <div class="glass">
       <header>
-        <h1>ExitV2</h1>
+        <h1>🕵️‍♀️ Das geheime Liebesrätsel</h1>
         <div class="sub">Sechs Text-Rätsel · Ein Wort pro Rätsel · Am Ende die Wahrheit.</div>
       </header>
 
@@ -107,6 +104,7 @@
       </div>
 
       <div class="footer">
+        <span>Nur Text. Keine Bilder. 100% Herz.</span>
         <span id="progressInfo">Fortschritt: 0/5</span>
       </div>
     </div>
@@ -322,11 +320,7 @@
       state.startAt = new Date().toISOString();
       state.solved = state.solved || {};
       save();
-      // ZUERST ganz nach oben (Mobile Safari/Keyboard-Scroll-Fix)
-      window.scrollTo({top:0,left:0,behavior:'auto'});
       render();
-      // Danach sanft zum ersten freigeschalteten Rätsel
-      setTimeout(scrollToFirstUnlocked, 150);
     });
 
     $('#resetBtn').addEventListener('click', ()=>{
@@ -351,8 +345,6 @@
 
     // Initial UI state
     // Reflect controls from saved state
-    // Beim Laden sicherstellen, dass wir am Seitenanfang sind
-    try { window.scrollTo({top:0,left:0,behavior:'auto'}); } catch(_) {}
     $('#timedToggle').checked = !!state.timed;
     $('#interval').value = state.intervalMin;
 
