@@ -395,7 +395,7 @@
         const label = document.createElement('label');
         label.textContent = 'Shift:';
         const slider = document.createElement('input');
-        slider.type = 'range'; slider.min = '0'; slider.max = '25'; slider.value = String(shiftInit);
+        slider.type = 'range'; slider.min = '0'; slider.max = '25'; slider.value = String(6);
         const valOut = document.createElement('span'); valOut.className = 'mono'; valOut.textContent = ` ${shiftInit}`;
         sliderWrap.appendChild(label); sliderWrap.appendChild(slider); sliderWrap.appendChild(valOut);
         card.appendChild(sliderWrap);
