@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Geheimes Liebesrätsel</title>
+  <title>ExitV2</title>
   <style>
     :root{
       --bg:#0f172a; /* slate-900 */
@@ -16,17 +16,18 @@
       --warn:#f59e0b; /* amber-500 */
       --err:#f87171; /* red-400 */
       --card:#111827; /* gray-900 */
-      --border: #1f2937; /* gray-800 */
+      --border:#1f2937; /* gray-800 */
     }
-    html,body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";\n      background: radial-gradient(1200px 600px at 20% -20%, #1e293b, transparent),\n                  radial-gradient(1200px 800px at 120% 20%, #0e7490, transparent),\n                  var(--bg);\n      color:var(--text);\n      min-height:100%;\n    }
-    body{
-      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    html,body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background: radial-gradient(1200px 600px at 20% -20%, #1e293b, transparent),
                   radial-gradient(1200px 800px at 120% 20%, #0e7490, transparent),
                   var(--bg);
       color:var(--text);
-      display:flex; align-items:center; justify-content:center;
+      min-height:100%;
     }
+    /* WICHTIG: Kein Flex-Centering, damit auf Mobile nichts abgeschnitten wird */
     .wrap{ width: min(900px, 92vw); margin: 0 auto; padding: 12px 0 28px; }
     .glass{ backdrop-filter: blur(8px); background: linear-gradient(180deg, rgba(17,24,39,.85), rgba(17,24,39,.75)); border:1px solid var(--border); border-radius:24px; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow:hidden; }
     header{ padding:28px 28px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; backdrop-filter: blur(10px); background: linear-gradient(180deg, rgba(17,24,39,.92), rgba(17,24,39,.78)); }
@@ -54,6 +55,7 @@
 
     .riddle-title{ font-weight:700; font-size:16px; letter-spacing:.3px }
     .riddle{ color: #e7eaf1; line-height:1.5; font-size:15px }
+    .riddle img{ max-width:100%; height:auto; border-radius:12px; border:1px solid var(--border); background:#0b1220 }
 
     .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center }
     .msg{ font-size:13px; color:var(--muted) }
@@ -73,15 +75,24 @@
     .hidden{ display:none }
     /* Mobile/Scroll Fixes */
     .card{ scroll-margin-top: 120px }
-    @media(max-width:640px){ .card{ scroll-margin-top: 96px } }
-    /* Mobile layout: voll scrollfähig, kein Flex-Centering */    @media(max-width: 640px){\n      .wrap{ width:100vw; padding: 8px 0 24px; }\n      .glass{ border-radius:0; }\n      header{ padding:16px 14px 10px; }\n      .controls{ padding:10px 14px; gap:8px }\n      .grid{ padding:10px }\n      .card{ min-height:auto; scroll-margin-top:96px }\n    }\n  </style>
+    @media(max-width:640px){
+      .card{ scroll-margin-top: 96px }
+      .wrap{ width:100vw; padding: 8px 0 24px; }
+      .glass{ border-radius:0; }
+      header{ padding:16px 14px 10px; }
+      .controls{ padding:10px 14px; gap:8px }
+      .grid{ padding:10px }
+      .card{ min-height:auto; }
+    }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.4px }
+  </style>
 </head>
 <body>
   <div class="wrap">
     <div class="glass">
       <header>
         <h1>ExitV2</h1>
-        <div class="sub">Sechs Text-Rätsel · Ein Wort pro Rätsel · Am Ende die Wahrheit.</div>
+        <div class="sub">Rätsel nacheinander lösen · Text/Multiple Choice/Bild · Finale Nachricht am Ende.</div>
       </header>
 
       <div class="controls" id="controls">
@@ -107,128 +118,379 @@
       </div>
 
       <div class="footer">
-        <span id="progressInfo">Fortschritt: 0/5</span>
+        <span id="progressInfo">Fortschritt: 0/0</span>
       </div>
     </div>
   </div>
 
   <script>
-    // --- Konfiguration ---
-    const RIDDLES = [
-      {
-        key: 'ich',
-        title: 'Rätsel #1 – Der Anfang von allem',
-        text: 'Ich bin das Wort, mit dem Geschichten beginnen. Ohne mich gäbe es kein Wir, und doch bin ich nur drei Buchstaben lang. Wer bin ich?',
-        answers: ['ich']
-      },
-      {
-        key: 'liebe',
-        title: 'Rätsel #2 – Die Kraft ohne Logik',
-        text: 'Ich bin unsichtbar, doch ich bewege alles. Ich brauche kein Warum, kein Wie. Manchmal breche ich Herzen, manchmal heile ich sie. Wer bin ich?',
-        answers: ['liebe']
-      },
-      {
-        key: 'dich',
-        title: 'Rätsel #3 – Das Ziel aller Zeilen',
-        text: 'In jedem Gedicht bin ich das Ende. In jedem Blick bin ich das Zentrum. Ich bin der Grund, warum dieses Spiel begonnen hat. Wer bin ich?',
-        answers: ['dich']
-      },
-      {
-        key: 'ueber',
-        title: 'Rätsel #4 – Der Übergang',
-        text: 'Ich bin kein Ort, aber ich trenne Orte. Ich bin kein Himmel, aber ich führe dorthin. Ich stehe über vielem, und doch bin ich nur fünf Buchstaben lang. Wer bin ich?',
-        answers: ['über','ueber','uber']
-      },
-      {
-        key: 'alles',
-        title: 'Rätsel #5 – Das Ganze',
-        text: 'Ich bin das Maximum. Nichts ist mehr als ich. Und doch kann ich leicht gesagt, aber schwer gegeben werden. Wer bin ich?',
-        answers: ['alles']
-      }
-    ];
+  // --- Konfiguration ---
+  // Typen: 'text' | 'choice' | 'image' | 'puzzle' | 'caesar'
+  // 'puzzle': imgData (data-URL), gridSize (empf. 3 oder 4)
+  // nvIFOkzOzMjMyDIB
+  const RIDDLES = [/* — genau deine Mission, unverändert — */ 
+    {
+      key:'orion', type:'choice', title:'Sternbild des Jägers',
+      text:'Welches Sternbild zeigt einen Jäger am Himmel?',
+      options:['Orion','Drache','Fische'], correctIndex:0, answers:['orion'], wordOut:'S'
+    },
+    { key:'atlas', type:'puzzle', gridSize:4, title:'Puzzle – ATLAS',
+      text:'Bringe die Teile in die richtige Reihenfolge.', imgAlt:'Globus-Illustration, Schriftzug ATLAS',
+      imgData:'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#0a1224"/></linearGradient><radialGradient id="rg" cx="35%" cy="30%" r="60%"><stop offset="0" stop-color="#2563eb" stop-opacity=".9"/><stop offset="1" stop-color="#0ea5e9" stop-opacity=".7"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><g transform="translate(320,330)"><circle r="190" fill="url(#rg)" stroke="#1f2937" stroke-width="3"/><path d="M-80,-60 l40,-25 30,10 10,25 -20,20 -25,0 -15,-30z" fill="#86efac" opacity=".9"/><path d="M60,-20 l30,-10 25,20 -10,20 -35,10 -18,-18z" fill="#86efac" opacity=".9"/><path d="M-30,40 l50,8 -8,28 -44,-10 z" fill="#86efac" opacity=".85"/><g stroke="#334155" stroke-width="1" opacity=".7" fill="none"><ellipse rx="190" ry="60"/><ellipse rx="190" ry="120"/><ellipse rx="60"  ry="190" transform="rotate(90)"/><ellipse rx="120" ry="190" transform="rotate(90)"/></g></g><text x="50%" y="80" text-anchor="middle" font-family="ui-sans-serif,Arial" font-size="52" font-weight="800" fill="#e5e7eb">A***S</text></svg>`),
+      answers:['atlas'], wordOut:'A'
+    },
+    { key:'daemmerung', type:'text', title:'Zwischen Tag und Nacht',
+      text:'Ich liege zwischen Tag und Nacht, zweimal am Tag und doch nie zur selben Zeit. Wie nennt man mich?',
+      answers:['dämmerung','daemmerung','die dämmerung','die daemmerung'], wordOut:'N'
+    },
+    { key:'karten', type:'text', title:'Wegweiser ohne Worte',
+      text:'Ich zeige dir den Weg, spreche aber kein Wort. Ohne mich würdest du dich leicht verirren. Was bin ich?',
+      answers:['karte','die karte','karten'], wordOut:'K'
+    },
+    { key:'uhr', type:'text', title:'Zeitloses Ding',
+      text:'Ich laufe und habe doch keine Beine. Ich kann stehen und trotzdem weitergehen. Was bin ich?',
+      answers:['uhr','die uhr'], wordOut:'T'
+    },
+    { key:'pirat', type:'text', title:'Der Gesetzlose des Meeres',
+      text:'Ich fahre übers Meer, doch kein Land ist mein Zuhause. Mein Zeichen ist schwarz, und die Beute mein Ziel. Wer bin ich?',
+      answers:['pirat','der pirat'], wordOut:'P'
+    },
+    { key:'geradezahl', type:'choice', title:'Mathe – gerade oder ungerade?',
+      text:'Welche dieser Zahlen ist gerade?', options:['3','4','9'], correctIndex:1, answers:['vier','4'], wordOut:'E'
+    },
+    { key:'kamm', type:'text', title:'Rätsel – Zähne ohne Hunger',
+      text:'Ich habe viele Zähne, aber ich beiße nicht. Was bin ich?', answers:['kamm','der kamm'], wordOut:'T'
+    },
+    { key:'eule', type:'text', title:'Wächterin der Nacht',
+    text:'Ich sehe im Dunkeln, doch nicht am Tag. Ich bin weise, doch kein Mensch. Wer bin ich?',
+    answers:['eule','die eule'], wordOut:'E'
+    },
+    { key:'regen', type:'text', title:'Vom Himmel gefallen',
+      text:'Ich falle, doch werde nie geworfen. Ich mache nass, bin aber kein Meer. Was bin ich?', answers:['regen','der regen'], wordOut:'R'
+    },
+    { key:'ozean', type:'puzzle', gridSize:4, title:'Puzzle – OZEAN', text:'Ordne die Wellen.',
+      imgAlt:'Wellen-Illustration, Schriftzug OZEAN',
+      imgData:'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640"><rect width="640" height="640" fill="#0b1220"/><g><text x="320" y="90" text-anchor="middle" font-family="ui-sans-serif,Arial" font-size="56" font-weight="800" fill="#e5e7eb">OZEAN</text><g transform="translate(0,180)" fill="none" stroke-width="3"><path d="M0,60 C60,0 120,120 180,60 S300,0 360,60 480,120 540,60 600,0 640,60" stroke="#38bdf8"/><path d="M0,120 C60,60 120,180 180,120 S300,60 360,120 480,180 540,120 600,60 640,120" stroke="#22d3ee"/><path d="M0,180 C60,120 120,240 180,180 S300,120 360,180 480,240 540,180 600,120 640,180" stroke="#0ea5e9"/><path d="M0,240 C60,180 120,300 180,240 S300,180 360,240 480,300 540,240 600,180 640,240" stroke="#0284c7"/><path d="M0,300 C60,240 120,360 180,300 S300,240 360,300 480,360 540,300 600,240 640,300" stroke="#0369a1"/></g></g></svg>`),
+      answers:['ozean'], wordOut:'O'
+    },
+    { key:'grenze', type:'text', title:'Unsichtbare Linie',
+      text:'Ich trenne Länder, doch ich bin keine Mauer. Ich existiere auf Karten, aber nicht im Sand. Wer bin ich?',
+      answers:['grenze','die grenze'], wordOut:'R'
+    },
+    { key:'dorf', type:'text', title:'Klein, aber belebt',
+      text:'Ich bin größer als ein Haus, doch kleiner als eine Stadt. In mir kennt jeder jeden. Was bin ich?',
+      answers:['dorf','das dorf'], wordOut:'D'
+    },
+    { key:'ich', type:'text', title:'Kurz und zentral',
+      text:'Es gibt niemanden, den du besser kennst – aber du kannst mich nie von außen sehen. Wer bin ich?',
+      answers:['ich'], wordOut:'I'
+    },
+    { key:'nebel', type:'puzzle', gridSize:3, title:'Puzzle – NEBEL', text:'Lichte den Schleier.',
+      imgAlt:'Nebel-Illustration', imgData:'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640"><defs><linearGradient id="bg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#0a0f1a"/></linearGradient><filter id="blur"><feGaussianBlur stdDeviation="3"/></filter></defs><rect width="640" height="640" fill="url(#bg)"/><g opacity=".85"><ellipse cx="200" cy="380" rx="220" ry="70" fill="#475569" filter="url(#blur)"/><ellipse cx="420" cy="420" rx="240" ry="80" fill="#334155" filter="url(#blur)"/><ellipse cx="320" cy="460" rx="260" ry="90" fill="#1f2937" filter="url(#blur)"/></g><g fill="#94a3b8" opacity=".6"><rect x="0" y="240" width="640" height="8" rx="4"/><rect x="0" y="280" width="640" height="10" rx="5" opacity=".55"/><rect x="0" y="320" width="640" height="12" rx="6" opacity=".5"/><rect x="0" y="360" width="640" height="10" rx="5" opacity=".45"/><rect x="0" y="400" width="640" height="8" rx="4" opacity=".4"/></g><text x="320" y="110" text-anchor="middle" font-family="ui-sans-serif,Arial" font-size="54" font-weight="800" fill="#e5e7eb" opacity=".95">NEBEL</text></svg>`),
+      answers:['nebel'], wordOut:'N'
+    },
+    { key:'tag', type:'text', title:'Wenn die Sonne lacht',
+      text:'Ich ende, wenn du beginnst zu schlafen. Ich bin hell, doch ohne Licht gäbe es mich nicht.',
+      answers:['tag','der tag'], wordOut:'G'
+    },
 
-    const FINAL_SENTENCE = 'Ich liebe dich über alles.';
+    // *** NEU: Finale Cäsar-Chiffre ***
+    { key:'caesar', type:'caesar', title:'Finale – CÄSAR',
+      text:'Die OUT‑Buchstaben sind verschlüsselt. Stellt den richtigen Shift ein und bestätigt das Lösungswort.',
+      shift: 22 // beliebig wählbar (0–25)
+    }
+  ];
 
-    const $ = sel => document.querySelector(sel);
-    const grid = $('#grid');
-    const progressInfo = $('#progressInfo');
+  const FINAL_SENTENCE = 'Codename bestätigt: S A N K T  P E T E R  O R D I N G.';
+  const TARGET_WORD_RAW = 'SanktPeterOrding';
 
-    const state = {
-      started: false,
-      timed: false,
-      intervalMin: 45,
-      startAt: null,
-      solved: {},
-      unlocked: {0:true},
-    };
+  const $ = sel => document.querySelector(sel);
+  const grid = $('#grid');
+  const progressInfo = $('#progressInfo');
 
-    // Load from localStorage
-    const saved = JSON.parse(localStorage.getItem('love-riddle-v1')||'null');
-    if(saved){ Object.assign(state, saved); }
+  const state = {
+    started: false,
+    timed: false,
+    intervalMin: 45,
+    startAt: null,
+    solved: {},
+    unlocked: {0:true},
+  };
 
-    const save = () => localStorage.setItem('love-riddle-v1', JSON.stringify(state));
+  // Load from localStorage (Migration vom alten Key)
+  const saved = JSON.parse(localStorage.getItem('exitv2-v1')||localStorage.getItem('love-riddle-v1')||'null');
+  if(saved){ Object.assign(state, saved); }
+  const save = () => localStorage.setItem('exitv2-v1', JSON.stringify(state));
 
-    // Helpers
-    const normalize = (s) => (s||'').toString().trim().toLowerCase()
-      .normalize('NFD').replace(/\p{Diacritic}/gu,'');
+  // Helpers
+  const normalize = (s) => (s||'').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'');
 
-    const isUnlocked = (idx) => {
-      if(!state.started) return false;
-      if(idx===0) return true;
-      // must be sequential
-      for(let i=0;i<idx;i++){ if(!state.solved[RIDDLES[i].key]) return false; }
-      if(!state.timed) return true;
-      const base = state.startAt ? new Date(state.startAt).getTime() : Date.now();
-      const unlockAt = base + (idx * state.intervalMin * 60 * 1000);
-      return Date.now() >= unlockAt;
-    };
+  const onlyAZ = s => (s||'').toUpperCase().replace(/[^A-Z ]/g,'');
+  const targetAZ = onlyAZ(TARGET_WORD_RAW).replace(/\s+/g,'');
 
-    const formatUnlock = (idx) => {
-      if(!state.timed) return '';
-      const base = state.startAt ? new Date(state.startAt).getTime() : Date.now();
-      const t = new Date(base + (idx * state.intervalMin * 60 * 1000));
-      return t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    };
+  function caesarEncode(str, shift){
+    const a='A'.charCodeAt(0);
+    shift=((shift%26)+26)%26;
+    return str.replace(/[A-Za-z]/g, ch=>{
+      const base = (ch>='a'&&ch<='z')?'a'.charCodeAt(0):a;
+      const code = ch.toUpperCase().charCodeAt(0)-a;
+      const enc = (code+shift)%26;
+      const c = String.fromCharCode(a+enc);
+      return (base===a)?c:c.toLowerCase();
+    });
+  }
+  function caesarDecode(str, shift){ return caesarEncode(str, -shift); }
 
-    function render(){
-      // Controls reflect state
-      $('#timedToggle').checked = !!state.timed;
-      $('#interval').value = state.intervalMin;
+  const isUnlocked = (idx) => {
+    if(!state.started) return false;
+    if(idx===0) return true;
+    for(let i=0;i<idx;i++){ if(!state.solved[RIDDLES[i].key]) return false; }
+    if(!state.timed) return true;
+    const base = state.startAt ? new Date(state.startAt).getTime() : Date.now();
+    const unlockAt = base + (idx * state.intervalMin * 60 * 1000);
+    return Date.now() >= unlockAt;
+  };
 
-      grid.innerHTML = '';
-      let solvedCount = 0;
+  const formatUnlock = (idx) => {
+    if(!state.timed) return '';
+    const base = state.startAt ? new Date(state.startAt).getTime() : Date.now();
+    const t = new Date(base + (idx * state.intervalMin * 60 * 1000));
+    return t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  };
 
-      RIDDLES.forEach((r, idx)=>{
-        const solved = !!state.solved[r.key];
-        if(solved) solvedCount++;
-        const unlocked = isUnlocked(idx);
+  function render(){
+    // Controls reflect state
+    $('#timedToggle').checked = !!state.timed;
+    $('#interval').value = state.intervalMin;
 
-        const card = document.createElement('div');
-        card.className = 'card' + (unlocked?'' : ' locked');
+    grid.innerHTML = '';
+    let solvedCount = 0;
 
-        const badge = document.createElement('div');
-        badge.className = 'badge ' + (solved? 'ok' : (unlocked? 'next' : 'lock'));
-        badge.textContent = solved? 'Gelöst' : (unlocked? 'Bereit' : (state.timed? ('Frei um ' + formatUnlock(idx)) : 'Gesperrt'));
-        card.appendChild(badge);
+    RIDDLES.forEach((r, idx)=>{
+      const solved = !!state.solved[r.key];
+      if(solved) solvedCount++;
+      const unlocked = isUnlocked(idx);
 
-        const title = document.createElement('div');
-        title.className = 'riddle-title';
-        title.textContent = r.title;
-        card.appendChild(title);
+      const card = document.createElement('div');
+      card.className = 'card' + (unlocked?'' : ' locked');
 
-        const text = document.createElement('div');
-        text.className = 'riddle';
-        text.textContent = r.text;
-        card.appendChild(text);
+      const badge = document.createElement('div');
+      badge.className = 'badge ' + (solved? 'ok' : (unlocked? 'next' : 'lock'));
+      badge.textContent = solved? 'Gelöst' : (unlocked? 'Bereit' : (state.timed? ('Frei um ' + formatUnlock(idx)) : 'Gesperrt'));
+      card.appendChild(badge);
 
-        const row = document.createElement('div');
-        row.className = 'row';
+      const title = document.createElement('div');
+      title.className = 'riddle-title';
+      title.textContent = r.title;
+      card.appendChild(title);
+
+      const text = document.createElement('div');
+      text.className = 'riddle';
+      text.textContent = r.text;
+      card.appendChild(text);
+
+      // TYPE-SPECIFIC
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      if(r.type === 'choice'){
+        (r.options || []).forEach((opt, i)=>{
+          const b = document.createElement('button');
+          b.textContent = opt;
+          b.disabled = !unlocked || solved;
+          b.addEventListener('click', ()=>{
+            const isCorrect = (i === r.correctIndex) || (r.answers||[]).map(normalize).includes(normalize(opt));
+            checkResult(isCorrect, card, row, r, idx);
+          });
+          row.appendChild(b);
+        });
+        // Lösungsbutton (Multiple Choice)
+        const solveBtn = document.createElement('button');
+        solveBtn.textContent = 'Lösung';
+        solveBtn.className = 'ghost';
+        solveBtn.disabled = !unlocked || solved;
+        solveBtn.addEventListener('click', ()=>{
+          if(!confirm('Lösung anzeigen?')) return;
+          checkResult(true, card, row, r, idx);
+        });
+        row.appendChild(solveBtn);
+
+        const msg = document.createElement('div'); msg.className = 'msg'; row.appendChild(msg);
+        card.appendChild(row);
+
+      } else if (r.type === 'puzzle') {
+        // Sliding-Puzzle (NxN) mit solvability-check
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 360; // DPR wird intern skaliert
+        canvas.style.borderRadius = '12px';
+        canvas.style.border = '1px solid var(--border)';
+        canvas.style.background = '#0b1220';
+        canvas.style.maxWidth = '100%';
+        canvas.style.height = 'auto';
+
+        const msg = document.createElement('div'); msg.className = 'msg'; msg.textContent = unlocked ? 'Mische und löse das Puzzle.' : '';
+        const controls = document.createElement('div'); controls.className = 'row';
+        const reshuffleBtn = document.createElement('button'); reshuffleBtn.className = 'secondary'; reshuffleBtn.textContent = 'Neu mischen';
+        const solveBtn = document.createElement('button'); solveBtn.className = 'ghost'; solveBtn.textContent = 'Lösung';
+
+        controls.appendChild(reshuffleBtn);
+        controls.appendChild(solveBtn);
+        card.appendChild(canvas);
+        card.appendChild(controls);
+        card.appendChild(msg);
+
+        if(!unlocked){
+          canvas.style.opacity = .6;
+          reshuffleBtn.disabled = true;
+          solveBtn.disabled = true;
+        } else if(solved){
+          msg.textContent = 'Schon gelöst ✔︎';
+          canvas.style.opacity = .8;
+          reshuffleBtn.disabled = true;
+          solveBtn.disabled = true;
+        } else {
+          const img = new Image();
+          img.alt = r.imgAlt || 'Puzzle';
+          img.src = r.imgData || r.imgSrc || '';
+          const onSolved = () => {
+            msg.textContent = 'Richtig!';
+            msg.className = 'msg ok';
+            reshuffleBtn.disabled = true;
+            solveBtn.disabled = true;
+            canvas.style.opacity = .9;
+            checkResult(true, card, row, r, idx);
+          };
+          // WICHTIG: sofort starten – die Engine wartet intern auf decode()
+          const controller = startSlidingPuzzle(canvas, img, r.gridSize || 3, onSolved);
+          reshuffleBtn.onclick = ()=> controller.shuffle();
+          solveBtn.onclick = ()=>{
+            if(!confirm('Lösung anzeigen?')) return;
+            if(controller.solve) controller.solve(); else onSolved();
+          };
+        }
+
+      } else if (r.type === 'caesar') {
+        // Finale Cäsar-Chiffre
+        const solvedSoFar = RIDDLES.slice(0, idx).map(rr => rr.wordOut || '').join('');
+        const targetGrouped = ['SANKT','PETER','ORDING'];
+        const targetFlat = targetGrouped.join('');
+        const shiftInit = (typeof r.shift==='number')? r.shift : 6;
+        const cipherGrouped = (()=>{
+          const enc = caesarEncode(targetFlat, shiftInit).toUpperCase();
+          return [enc.slice(0,5), enc.slice(5,10), enc.slice(10)];
+        })();
+
+        const cipherEl = document.createElement('div');
+        cipherEl.className = 'mono';
+        cipherEl.style.fontSize = '18px';
+        cipherEl.style.padding = '6px 10px';
+        cipherEl.style.border = '1px dashed var(--border)';
+        cipherEl.style.borderRadius = '10px';
+        cipherEl.textContent = 'Geheimtext:  ' + cipherGrouped.join('   ');
+        card.appendChild(cipherEl);
+
+        const sliderWrap = document.createElement('div');
+        sliderWrap.className = 'row';
+        const label = document.createElement('label');
+        label.textContent = 'Shift:';
+        const slider = document.createElement('input');
+        slider.type = 'range'; slider.min = '0'; slider.max = '25'; slider.value = String(shiftInit);
+        const valOut = document.createElement('span'); valOut.className = 'mono'; valOut.textContent = ` ${shiftInit}`;
+        sliderWrap.appendChild(label); sliderWrap.appendChild(slider); sliderWrap.appendChild(valOut);
+        card.appendChild(sliderWrap);
+
+        const preview = document.createElement('div');
+        preview.className = 'mono';
+        preview.style.fontSize = '18px';
+        preview.textContent = 'Klartext:     ';
+        card.appendChild(preview);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Lösungswort eingeben (z. B. SanktPeterOrding)…';
+        input.disabled = !unlocked || solved;
+        input.style.flex = '1';
+        row.appendChild(input);
+
+        const btn = document.createElement('button');
+        btn.textContent = solved? '✔️' : 'Bestätigen';
+        btn.disabled = !unlocked || solved;
+        row.appendChild(btn);
+
+        const hint = document.createElement('button');
+        hint.textContent = 'Hinweis';
+        hint.className = 'secondary';
+        hint.disabled = !unlocked || solved;
+        row.appendChild(hint);
+
+        const solveBtn = document.createElement('button');
+        solveBtn.textContent = 'Lösung';
+        solveBtn.className = 'ghost';
+        solveBtn.disabled = !unlocked || solved;
+        row.appendChild(solveBtn);
+
+        const msg = document.createElement('div');
+        msg.className = 'msg';
+        row.appendChild(msg);
+
+        card.appendChild(row);
+
+        const updatePreview = ()=>{
+          const k = parseInt(slider.value,10)|0; valOut.textContent = ' ' + k;
+          const dec = caesarDecode(cipherGrouped.join(''), k).toUpperCase();
+          const pretty = [dec.slice(0,5), dec.slice(5,10), dec.slice(10)].join(' ');
+          preview.textContent = 'Klartext:     ' + pretty;
+          if(!input.value) input.value = pretty.replace(/\s+/g,'');
+        };
+        slider.addEventListener('input', updatePreview);
+        updatePreview();
+
+        const check = () => {
+          const val = normalize(input.value).replace(/\s+/g,'');
+          const ok = (val === normalize(TARGET_WORD_RAW));
+          checkResult(ok, card, row, r, idx, {btn,input,hint,msg});
+        };
+        btn.addEventListener('click', check);
+        input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+        hint.addEventListener('click', ()=>{
+          msg.textContent = `Tipp: Beim Cäsar-Code wird das Alphabet zyklisch verschoben. Findet den richtigen Shift für "${TARGET_WORD_RAW}".`;
+          msg.className = 'msg';
+        });
+        solveBtn.addEventListener('click', ()=>{
+          if(!confirm('Lösung anzeigen?')) return;
+          input.value = TARGET_WORD_RAW;
+          checkResult(true, card, row, r, idx, {btn,input,hint,msg});
+        });
+
+        if(!unlocked){
+          slider.disabled = true;
+          btn.disabled = true;
+          hint.disabled = true;
+          solveBtn.disabled = true;
+          input.disabled = true;
+        }
+
+      } else {
+        // TEXT / IMAGE
+        if(r.type === 'image'){
+          const img = document.createElement('img');
+          img.alt = r.imgAlt || 'Bildrätsel';
+          img.src = r.imgData || r.imgSrc || '';
+          img.loading = 'lazy';
+          img.style.maxHeight = '320px';
+          img.style.objectFit = 'contain';
+          const imgWrap = document.createElement('div');
+          imgWrap.className = 'riddle';
+          imgWrap.appendChild(img);
+          card.appendChild(imgWrap);
+        }
 
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = 'Antwort eingeben…';
         input.disabled = !unlocked || solved;
-        input.value = solved? r.answers[0] : '';
+        input.value = solved? (r.answers?.[0] || '') : '';
         row.appendChild(input);
 
         const btn = document.createElement('button');
@@ -242,128 +504,349 @@
         hint.disabled = !unlocked || solved;
         row.appendChild(hint);
 
+        // Lösungsbutton (Text/Bild)
+        const solveBtn = document.createElement('button');
+        solveBtn.textContent = 'Lösung';
+        solveBtn.className = 'ghost';
+        solveBtn.disabled = !unlocked || solved;
+        row.appendChild(solveBtn);
+
         const msg = document.createElement('div');
         msg.className = 'msg';
         row.appendChild(msg);
 
         card.appendChild(row);
-        grid.appendChild(card);
 
-        // Handlers
         const check = () => {
           const val = normalize(input.value);
-          const ok = r.answers.map(normalize).includes(val);
-          if(ok){
-            state.solved[r.key] = true;
-            save();
-            msg.textContent = 'Richtig!';
-            msg.className = 'msg ok';
-            btn.textContent = '✔️';
-            btn.disabled = true; input.disabled = true; hint.disabled = true;
-            renderMaybeFinish();
-          }else{
-            msg.textContent = 'Nicht ganz. Versuch eine einfachere Schreibweise.';
-            msg.className = 'msg err';
-          }
+          const ok = (r.answers||[]).map(normalize).includes(val);
+          checkResult(ok, card, row, r, idx, {btn,input,hint,msg});
         };
         btn.addEventListener('click', check);
         input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
 
         hint.addEventListener('click', ()=>{
           const clues = {
-            ich: 'Drei Buchstaben. Beginnt jede Geschichte, beginnt auch dieses Geständnis.',
-            liebe: 'Unsichtbar, aber spürbar. Stärker als Logik.',
-            dich: 'Ziel aller Zeilen, Mittelpunkt eines Blicks.',
-            ueber: 'Mit Punkten oder ohne, doch immer höher als…',
-            alles: 'Mehr gibt es nicht.'
+            orion: 'Drei Gürtelsterne in einer Linie.',
+            daemmerung: 'Zwischenzustand – weder Tag noch Nacht.',
+            kamm: 'Viele Zähne – aber niemand wird gebissen.',
+            regen: 'Wasser von oben.',
+            ich: 'Sag deinen Namen, aber kürzer.',
+            tag: 'Gegenteil von Nacht.',
+            atlas: 'Bücherregal für Karten.',
+            ozean: 'Größer als ein Meer.',
+            nebel: 'Sichtweite gering.',
           };
           msg.textContent = clues[r.key] || 'Kein Hinweis verfügbar.';
           msg.className = 'msg';
         });
-      });
 
-      progressInfo.textContent = `Fortschritt: ${solvedCount}/${RIDDLES.length}`;
-
-      // Toggle final block
-      const allSolved = solvedCount === RIDDLES.length;
-      $('#final').classList.toggle('hidden', !allSolved);
-      if(allSolved){
-        const words = ['Ich','Liebe','Dich','Über','Alles'];
-        $('#foundLine').textContent = words.join(' · ');
-        typeFinal(FINAL_SENTENCE);
+        solveBtn.addEventListener('click', ()=>{
+          if(!confirm('Lösung anzeigen?')) return;
+          if(r.answers && r.answers.length){ input.value = r.answers[0]; }
+          checkResult(true, card, row, r, idx, {btn,input,hint,msg});
+        });
       }
-    }
 
-    function renderMaybeFinish(){
-      // Re-render to unlock next card instantly (even im Zeitmodus, wir prüfen Zeit erneut)
-      render();
-    }
+            // OUT-Buchstabe anzeigen (nur wenn gelöst)
+      if (r.wordOut && solved) {
+        const out = document.createElement('div');
+        out.className = 'msg ok';
+        const enc = caesarEncode(r.wordOut, 22).toUpperCase();
+        out.innerHTML = `OUT‑Buchstabe: <span class="mono" style="font-size:18px">${enc}</span>`;
+        card.appendChild(out);
+      }
 
-    function typeFinal(text){
-      const el = $('#finalText');
-      el.innerHTML = '';
-      const span = document.createElement('span');
-      span.className = 'type';
-      el.appendChild(span);
-      let i=0;
-      const tick = () => {
-        span.textContent = text.slice(0,i++);
-        if(i<=text.length) requestAnimationFrame(tick);
-        else span.classList.remove('type');
-      };
-      tick();
-    }
+      grid.appendChild(card);
+    });
 
-    // Controls
-    $('#startBtn').addEventListener('click', ()=>{
-      state.started = true;
-      state.timed = $('#timedToggle').checked;
-      state.intervalMin = Math.max(1, parseInt($('#interval').value||'45',10));
-      state.startAt = new Date().toISOString();
-      state.solved = state.solved || {};
+    progressInfo.textContent = `Fortschritt: ${solvedCount}/${RIDDLES.length}`;
+
+    const allSolved = solvedCount === RIDDLES.length;
+    $('#final').classList.toggle('hidden', !allSolved);
+    if(allSolved){
+      const words = RIDDLES.map(r => r.wordOut || (r.answers?.[0] ?? '')).filter(Boolean);
+      $('#foundLine').textContent = words.join(' · ');
+      typeFinal(FINAL_SENTENCE);
+    }
+  }
+
+  function checkResult(ok, card, row, r, idx, refs={}){
+    const {btn, input, hint, msg} = refs;
+    const localMsg = msg || row?.querySelector?.('.msg') || document.createElement('div');
+
+    if(ok){
+      state.solved[r.key] = true;
       save();
-      // ZUERST ganz nach oben (Mobile Safari/Keyboard-Scroll-Fix)
-      window.scrollTo({top:0,left:0,behavior:'auto'});
-      render();
-      // Danach sanft zum ersten freigeschalteten Rätsel
-      setTimeout(scrollToFirstUnlocked, 150);
-    });
-
-    $('#resetBtn').addEventListener('click', ()=>{
-      if(confirm('Wirklich alles zurücksetzen?')){
-        localStorage.removeItem('love-riddle-v1');
-        Object.assign(state, { started:false, timed:false, intervalMin:45, startAt:null, solved:{}, unlocked:{0:true} });
-        render();
-      }
-    });
-
-    $('#copyBtn')?.addEventListener('click', async ()=>{
-      const text = FINAL_SENTENCE + '\n— Dein geheimes Rätsel';
-      try{ await navigator.clipboard.writeText(text); alert('Kopiert!'); }catch(e){ alert('Konnte nicht kopieren.'); }
-    });
-
-    $('#restartBtn')?.addEventListener('click', ()=>{
-      document.getElementById('resetBtn').click();
-    });
-
-    // Timed unlock ticker
-    setInterval(()=>{ if(state.started && state.timed) render(); }, 15*1000);
-
-    // Initial UI state
-    // Reflect controls from saved state
-    // Beim Laden sicherstellen, dass wir am Seitenanfang sind
-    try { window.scrollTo({top:0,left:0,behavior:'auto'}); } catch(_) {}
-    $('#timedToggle').checked = !!state.timed;
-    $('#interval').value = state.intervalMin;
-
-    // If started previously, render cards; else show empty grid text
-    if(state.started){ render(); }
-    else{
-      grid.innerHTML = `<div class="card" style="grid-column:1/-1; align-items:center; text-align:center;">
-        <div class="riddle-title">Bereit?</div>
-        <div class="riddle">Drücke <b>Start</b>, um die Mission zu beginnen. Du kannst entscheiden, ob die Rätsel automatisch im Intervall freigeschaltet werden (Zeitmodus) oder ob du sie nacheinander manuell löst.</div>
-      </div>`;
+      if(localMsg){ localMsg.textContent = 'Richtig!'; localMsg.className = 'msg ok'; }
+      if(btn) btn.disabled = true;
+      if(input) input.disabled = true;
+      if(hint) hint.disabled = true;
+      setTimeout(render, 150);
+      setTimeout(scrollToFirstUnlocked, 250);
+    }else{
+      if(localMsg){ localMsg.textContent = 'Nicht ganz. Versuch eine einfachere Schreibweise.'; localMsg.className = 'msg err'; }
     }
-  </script>
+  }
+
+  function typeFinal(text){
+    const el = $('#finalText');
+    el.innerHTML = '';
+    const span = document.createElement('span');
+    span.className = 'type';
+    el.appendChild(span);
+    let i=0;
+    const tick = () => {
+      span.textContent = text.slice(0,i++);
+      if(i<=text.length) requestAnimationFrame(tick);
+      else span.classList.remove('type');
+    };
+    tick();
+  }
+
+  function scrollToFirstUnlocked(){
+    const cards = document.querySelectorAll('.card');
+    for(const c of cards){
+      if(!c.classList.contains('locked')){
+        c.scrollIntoView({behavior:'smooth', block:'start'});
+        const input = c.querySelector('input[type="text"]');
+        if(input){ setTimeout(()=> input.focus(), 200); }
+        break;
+      }
+    }
+  }
+
+  // --- Sliding Puzzle Engine (mit zuverlässigem SVG-Decode) ---
+  function startSlidingPuzzle(canvas, img, n = 3, onSolved = () => {}) {
+  const ctx = canvas.getContext("2d");
+
+  // Farben aus CSS-Variablen ziehen
+  const css = getComputedStyle(document.documentElement);
+  const colBorder = css.getPropertyValue("--border").trim() || "#1f2937";
+  const colBg     = "#0b1220";
+  const colGlow   = css.getPropertyValue("--accent-2").trim() || "#38bdf8"; // hellblau
+  const colHatch  = "rgba(255,255,255,.08)";
+
+  // Sicher dekodieren (auch für SVGs)
+  const ensureReady = async () => {
+    if (img.decode) { try { await img.decode(); return; } catch(_) {} }
+    if (img.complete && img.naturalWidth) return;
+    await new Promise(res => { img.onload = () => res(); });
+  };
+
+  // Canvas sizing (HiDPI)
+  const DPR = window.devicePixelRatio || 1;
+  const sizeCSS = canvas.clientWidth || canvas.width || 360;
+  const SIZE = Math.floor(sizeCSS * DPR);
+  canvas.width = canvas.height = SIZE;
+
+  const tile = Math.floor(SIZE / n);
+
+  // Zielzustand
+  const goal = [];
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) goal.push({ x, y });
+  const EMPTY_INDEX = n * n - 1;
+
+  let pieces = goal.map(p => ({ ...p }));
+  pieces[EMPTY_INDEX] = { x: n - 1, y: n - 1, empty: true };
+
+  let rafId = null;
+
+  function draw(ts = 0) {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    const pulse = 0.4 + 0.3 * Math.sin(ts * 0.004); // 0..1 sanft
+
+    pieces.forEach((p, i) => {
+      const dx = (i % n) * tile;
+      const dy = Math.floor(i / n) * tile;
+
+      if (p.empty) {
+        // 1) dunkle Fläche
+        ctx.fillStyle = colBg;
+        ctx.fillRect(dx, dy, tile, tile);
+
+        // 2) diagonale Schraffur
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(dx, dy, tile, tile);
+        ctx.clip();
+        ctx.strokeStyle = colHatch;
+        ctx.lineWidth = 2;
+        for (let k = -tile; k < tile * 2; k += 8) {
+          ctx.beginPath();
+          ctx.moveTo(dx + k, dy);
+          ctx.lineTo(dx + k - tile, dy + tile);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // 3) leuchtender Rahmen (Glow)
+        ctx.save();
+        ctx.shadowColor = colGlow;
+        ctx.shadowBlur = 12 + 10 * pulse;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = colGlow;
+        ctx.strokeRect(dx + 1.5, dy + 1.5, tile - 3, tile - 3);
+        ctx.restore();
+
+        // 4) dezenter Innenrahmen
+        ctx.strokeStyle = colBorder || "#1f2937";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(dx + .5, dy + .5, tile - 1, tile - 1);
+
+        // 5) pulsierender Punkt in der Mitte als „Tap“-Hinweis
+        const r = 5 + 3 * pulse;
+        ctx.beginPath();
+        ctx.arc(dx + tile / 2, dy + tile / 2, r, 0, Math.PI * 2);
+        ctx.fillStyle = colGlow;
+        ctx.globalAlpha = 0.7;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        return;
+      }
+
+      // Normales Kachel-Rendering
+      ctx.drawImage(
+        img,
+        p.x * (img.width / n), p.y * (img.height / n), img.width / n, img.height / n,
+        dx, dy, tile, tile
+      );
+      ctx.strokeStyle = "rgba(255,255,255,.06)";
+      ctx.strokeRect(dx + .5, dy + .5, tile - 1, tile - 1);
+    });
+  }
+
+  function indexAtClient(e) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const x = Math.floor(cx / (rect.width / n));
+    const y = Math.floor(cy / (rect.height / n));
+    if (x < 0 || y < 0 || x >= n || y >= n) return -1;
+    return y * n + x;
+  }
+
+  function posOfEmpty() { return pieces.findIndex(p => p.empty); }
+  function isAdjacent(a, b) {
+    const ax = a % n, ay = Math.floor(a / n);
+    const bx = b % n, by = Math.floor(b / n);
+    return Math.abs(ax - bx) + Math.abs(ay - by) === 1;
+  }
+  function isSolved() {
+    return pieces.every((p, i) =>
+      (p.empty && i === EMPTY_INDEX) ||
+      (!p.empty && p.x === i % n && p.y === Math.floor(i / n))
+    );
+  }
+  function isSolvable(arr, n) {
+    const flat = arr.slice(0, n * n - 1).map(p => p.y * n + p.x);
+    let inv = 0;
+    for (let i = 0; i < flat.length; i++)
+      for (let j = i + 1; j < flat.length; j++)
+        if (flat[i] > flat[j]) inv++;
+    if (n % 2 === 1) return inv % 2 === 0;
+    const blankRowFromBottom = n - Math.floor(posOfEmpty() / n);
+    return (blankRowFromBottom % 2 === 0) ? (inv % 2 === 1) : (inv % 2 === 0);
+  }
+  function shuffle() {
+    do {
+      const tiles = pieces.filter((_, i) => i !== EMPTY_INDEX);
+      for (let i = tiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+      }
+      pieces = tiles.concat([{ empty: true, x: n - 1, y: n - 1 }]);
+    } while (!isSolvable(pieces, n) || isSolved());
+  }
+  function tryMove(i) {
+    const ei = posOfEmpty();
+    if (!isAdjacent(i, ei)) return;
+    [pieces[i], pieces[ei]] = [pieces[ei], pieces[i]];
+    if (isSolved()) onSolved();
+  }
+
+  // NEU: Sofort lösen
+  function solve() {
+    pieces = goal.map(p => ({...p}));
+    pieces[EMPTY_INDEX] = { x: n - 1, y: n - 1, empty: true };
+    draw();
+    onSolved();
+  }
+
+  // Interaktionen
+  canvas.addEventListener("click", (e) => {
+    const i = indexAtClient(e);
+    if (i >= 0) tryMove(i);
+  }, { passive: true });
+  canvas.addEventListener("touchstart", (e) => {
+    const i = indexAtClient(e);
+    if (i >= 0) tryMove(i);
+  }, { passive: true });
+
+  // Animationsloop (für pulsierendes Leerfeld)
+  function loop(ts) {
+    draw(ts);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // Start
+  ensureReady().then(() => { shuffle(); loop(0); });
+
+  // API
+  return { shuffle, solve };
+}
+
+  function renderMaybeFinish(){ render(); }
+
+  // Controls
+  $('#startBtn').addEventListener('click', ()=>{
+    state.started = true;
+    state.timed = $('#timedToggle').checked;
+    state.intervalMin = Math.max(1, parseInt($('#interval').value||'45',10));
+    state.startAt = new Date().toISOString();
+    state.solved = state.solved || {};
+    save();
+    window.scrollTo({top:0,left:0,behavior:'auto'});
+    render();
+    setTimeout(scrollToFirstUnlocked, 150);
+  });
+
+  $('#resetBtn').addEventListener('click', ()=>{
+    if(confirm('Wirklich alles zurücksetzen?')){
+      localStorage.removeItem('exitv2-v1');
+      localStorage.removeItem('love-riddle-v1');
+      Object.assign(state, { started:false, timed:false, intervalMin:45, startAt:null, solved:{}, unlocked:{0:true} });
+      render();
+    }
+  });
+
+  $('#copyBtn')?.addEventListener('click', async ()=>{
+    const words = RIDDLES.map(r => r.wordOut || (r.answers?.[0] ?? '')).filter(Boolean).join(' ');
+    const text = (words ? words + '. ' : '') + FINAL_SENTENCE + '\n— ExitV2';
+    try{ await navigator.clipboard.writeText(text); alert('Kopiert!'); }catch(e){ alert('Konnte nicht kopieren.'); }
+  });
+
+  $('#restartBtn')?.addEventListener('click', ()=>{ document.getElementById('resetBtn').click(); });
+
+  // Timed unlock ticker
+  setInterval(()=>{ if(state.started && state.timed) render(); }, 15*1000);
+
+  // Initial UI
+  try { window.scrollTo({top:0,left:0,behavior:'auto'}); } catch(_) {}
+  $('#timedToggle').checked = !!state.timed;
+  $('#interval').value = state.intervalMin;
+  // Fortschritt initial korrekt setzen
+  progressInfo.textContent = `Fortschritt: 0/${RIDDLES.length}`;
+
+  if(state.started){ render(); }
+  else{
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1; align-items:center; text-align:center;">
+      <div class="riddle-title">Bereit?</div>
+      <div class="riddle">Drücke <b>Start</b>, um die Mission zu beginnen. Du kannst entscheiden, ob die Rätsel automatisch im Intervall freigeschaltet werden (Zeitmodus) oder ob du sie nacheinander manuell löst.</div>
+    </div>`;
+  }
+</script>
+
 </body>
 </html>
